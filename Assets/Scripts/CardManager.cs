@@ -5,6 +5,9 @@ using System.Linq;
 using Unity.VisualScripting;
 using UnityEngine;
 
+using TMPro;
+using UnityEngine.SceneManagement;
+
 public class CardManager : MonoBehaviour
 {
     public GameObject cardSet;
@@ -17,23 +20,32 @@ public class CardManager : MonoBehaviour
     public int row = 2;     // for stage 1
     private List<int> cardIndex = new List<int>();
 
+    public List<GameObject> currCards = new List<GameObject>();
+
+    public GameObject previousCard;
+
+    public int totalTime;
+
+    public int score;
+
+    public TMP_Text scoreUI;
+    public TMP_Text time;
+
     // Start is called before the first frame update
     void Start()
     {
         SetCardsList();
         cardIndex = GetRandomCardIndex();
         CardsInit();
-        
+
+        StartCoroutine(TimeCount());
+
     }
 
     // Update is called once per frame
     void Update()
     {
-        if( Input.GetKeyDown(KeyCode.Space))
-        {
-            Debug.Log(cardsList.Count);
-            Instantiate<GameObject>(cardsList[0]);
-        }
+        
     }
 
     private void SetCardsList()
@@ -88,11 +100,91 @@ public class CardManager : MonoBehaviour
         // Instantiate all cards and set position and rotation
         for (int i = 0; i<cardIndex.Count; i++)
         {
-            Instantiate(cardsList[cardIndex[i]], positions[i], Quaternion.FromToRotation(Vector3.up, Vector3.down));
+            currCards.Add(Instantiate(cardsList[cardIndex[i]], positions[i], Quaternion.FromToRotation(Vector3.up, Vector3.down)));
             //GameObject currCard = Instantiate<GameObject>(cardsList[cardIndex[i]]);
             //currCard.transform.SetPositionAndRotation(positions[i], Quaternion.FromToRotation(Vector3.up, Vector3.down));
         }
 
 
+    }
+
+    public void CheckCurrentState(GameObject currentCard)
+    {
+        Debug.Log("Checking Current State...");
+        // check if it is the second click.
+        int notOpen = 0;
+        bool isSecondClick = true;
+        foreach(GameObject card in currCards)
+        {
+            if (card.GetComponent<CardControl>().open)
+                isSecondClick = !isSecondClick;
+            else
+                notOpen++;
+        }
+        if (notOpen == 0)
+            StartCoroutine(NextStage());
+
+        // GameObject previousCard = new GameObject();
+
+        
+
+        if(!isSecondClick)
+        {
+            previousCard = currentCard;
+            //Debug.Log("Get information of previous Card: " + previousCard.name);
+        }
+        else
+        {
+            // Check if this two cards are the same one. (same number and same color.)
+            if(previousCard.GetComponent<CardControl>().number == currentCard.GetComponent<CardControl>().number &&
+                previousCard.GetComponent<CardControl>().color == currentCard.GetComponent<CardControl>().color)
+            {
+                // don't do anything.
+                score += 5;
+                scoreUI.SetText("Score: " + score);
+            }
+            else
+            {
+                Debug.Log("Wrong!");
+                StartCoroutine(Wait(1, currentCard));
+                //previousCard.transform.Rotate(Vector3.left, 180);
+                //currentCard.transform.Rotate(Vector3.left, 180);
+            }
+        }
+
+    }
+    IEnumerator Wait(int seconds, GameObject currentCard)
+    {
+        yield return new WaitForSeconds(seconds);
+        previousCard.transform.Rotate(Vector3.left, 180);
+        previousCard.GetComponent<CardControl>().open = false;
+        currentCard.transform.Rotate(Vector3.left, 180);
+        currentCard.GetComponent<CardControl>().open = false;
+    }
+
+    IEnumerator TimeCount()
+    {
+        // set Time text to Total Time
+        while (totalTime > 0)
+        {
+            time.SetText("Time: " + totalTime);
+            yield return new WaitForSeconds(1);
+            totalTime--;
+        }
+        EndGame();
+        yield break;
+    }
+    public void EndGame()
+    {
+
+    }
+    IEnumerator NextStage()
+    {
+        yield return new WaitForSeconds(1);
+        int sceneIndex = SceneManager.GetActiveScene().buildIndex;
+        if (sceneIndex < 2)
+            SceneManager.LoadScene(sceneIndex + 1);
+        else
+            EndGame();
     }
 }
