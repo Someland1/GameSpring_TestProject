@@ -7,6 +7,7 @@ using UnityEngine;
 
 using TMPro;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class CardManager : MonoBehaviour
 {
@@ -30,6 +31,7 @@ public class CardManager : MonoBehaviour
 
     public TMP_Text scoreUI;
     public TMP_Text time;
+    public Button restartButton;
 
     // Start is called before the first frame update
     void Start()
@@ -39,6 +41,8 @@ public class CardManager : MonoBehaviour
         CardsInit();
 
         StartCoroutine(TimeCount());
+
+        restartButton.GameObject().SetActive(false);
 
     }
 
@@ -176,7 +180,13 @@ public class CardManager : MonoBehaviour
     }
     public void EndGame()
     {
+        restartButton.GetComponentInChildren<TMP_Text>().SetText("Click to restart!");
+        restartButton.GameObject().SetActive(true);
+    }
 
+    public void ButtonOnClick()
+    {
+        SceneManager.LoadScene(0);
     }
     IEnumerator NextStage()
     {
